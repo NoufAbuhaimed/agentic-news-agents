@@ -109,8 +109,9 @@ def researcher(inp: ResearcherInput) -> dict:
 
     # Retries get a smaller search allowance so a weak topic can't double the run's cost.
     search_limit = settings.search_max_uses if attempt == 1 else settings.retry_search_max_uses
+    max_steps = settings.agent_max_steps if attempt == 1 else settings.retry_max_steps
     task += f"\n\nBudget: at most {search_limit} web searches and {settings.pages_per_thread} page fetches."
-    agent = build_research_agent(ctx, search_limit)
+    agent = build_research_agent(ctx, search_limit, max_steps)
     try:
         # Each agent turn is ~8 graph steps (model, tools, middleware hooks); our own limits stop it first.
         result = agent.invoke({"messages": [HumanMessage(task)]}, {"recursion_limit": 10 * settings.agent_max_steps + 10})
@@ -197,8 +198,8 @@ def select(state: DigestState) -> dict:
         fresh.append(c)
     log.info("%d fact-checked items, %d new", len(state.get("checked", [])), len(fresh))
 
-    if len(fresh) <= settings.max_items:
-        return {"selected": fresh}
+    if not fresh:
+        return {"selected": []}
 
     numbered = "\n".join(
         f"[{i}] {json.dumps(c.model_dump(include={'title', 'url', 'published', 'summary', 'why_it_matters'}), ensure_ascii=False)}"
@@ -211,9 +212,9 @@ def select(state: DigestState) -> dict:
         ],
         Selection,
     )
-    picked = [fresh[i] for i in choice.chosen if 0 <= i < len(fresh)][: settings.max_items]
-    log.info("selected %d: %s", len(picked), choice.reasoning)
-    return {"selected": picked or fresh[: settings.max_items]}
+    picked = [fresh[i] for i in dict.fromkeys(choice.chosen) if 0 <= i < len(fresh)][: settings.max_items]
+    log.info("selected %d of %d: %s", len(picked), len(fresh), choice.reasoning)
+    return {"selected": picked}
 
 
 def after_select(state: DigestState) -> str:

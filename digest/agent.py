@@ -67,7 +67,7 @@ class LoopDetector(AgentMiddleware):
         return None
 
 
-def build_research_agent(ctx: ResearchContext, search_limit: int):
+def build_research_agent(ctx: ResearchContext, search_limit: int, max_steps: int | None = None):
     models = list(settings.free_models)
     return create_agent(
         free_chat(models[0]),
@@ -77,7 +77,7 @@ def build_research_agent(ctx: ResearchContext, search_limit: int):
             # Free model busy or down → next free model → Claude Haiku.
             ModelFallbackMiddleware(*[free_chat(m) for m in models[1:2]], agent_fallback_chat()),
             # Hard limits: total model turns, and per-tool call counts.
-            ModelCallLimitMiddleware(run_limit=settings.agent_max_steps, exit_behavior="end"),
+            ModelCallLimitMiddleware(run_limit=max_steps or settings.agent_max_steps, exit_behavior="end"),
             ToolCallLimitMiddleware(tool_name="web_search", run_limit=search_limit, exit_behavior="continue"),
             ToolCallLimitMiddleware(tool_name="fetch_page", run_limit=settings.pages_per_thread, exit_behavior="continue"),
             LoopDetector(ctx.thread.name),

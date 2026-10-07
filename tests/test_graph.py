@@ -54,12 +54,25 @@ def test_no_retries_once_budget_is_spent():
     assert nodes.after_fact_check(base_state()) == "select"
 
 
-def test_select_drops_already_sent_and_duplicates():
+def test_select_drops_already_sent_and_duplicates(monkeypatch):
+    seen = {}
+
+    def editor(messages, schema):
+        seen["prompt"] = messages[-1].content
+        return schema(chosen=[0, 0], reasoning="keep it")  # duplicate index is ignored
+
+    monkeypatch.setattr(nodes, "free_json", editor)
     state = base_state(
         checked=[cand("https://x.dev/1"), cand("https://x.dev/1/"), cand("https://x.dev/2")],
         recent_urls=[normalize_url("https://x.dev/2")],
     )
     assert [c.url for c in nodes.select(state)["selected"]] == ["https://x.dev/1"]
+    assert "[1]" not in seen["prompt"]  # the editor only sees new, de-duplicated items
+
+
+def test_editor_can_drop_weak_items(monkeypatch):
+    monkeypatch.setattr(nodes, "free_json", lambda m, schema: schema(chosen=[], reasoning="all tutorials"))
+    assert nodes.select(base_state(checked=[cand("https://x.dev/how-to")]))["selected"] == []
 
 
 def test_critic_loop_is_bounded():
@@ -103,6 +116,8 @@ def test_full_run_offline_with_retry(monkeypatch):
             return schema(verdicts=[])
         if name == "Critique":
             return schema(passed=True)
+        if name == "Selection":
+            return schema(chosen=[0, 1], reasoning="both are news")
         raise AssertionError(name)
 
     def fake_researcher(inp):

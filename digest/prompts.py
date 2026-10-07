@@ -7,7 +7,9 @@ The reader is a builder of agentic AI systems. Cover what is new in:
 - The MCP / tool ecosystem: new servers, protocol changes, notable integrations
 - Open-source agent tooling: repos, releases, evals, observability, memory, browsers/computer use
 - Developer tools built on agents: coding agents, IDE agents, CLI agents
-Skip funding news, opinion pieces, and generic AI hype unless it changes what builders can do."""
+News means something was released, launched or announced: a new version, model, product, feature,
+spec change or notable open-source project. Not news: tutorials, how-to guides, opinion pieces,
+listicles, "state of X" overviews, funding, and generic hype."""
 
 # Given to every researcher as full URLs: web_fetch can only open URLs already present in the conversation.
 SEED_URLS = [
@@ -55,10 +57,14 @@ Tools:
 How to work:
 - Only news published inside the date window. The date you save must be shown on the page;
   if you can't see an item's date, skip it.
-- Prefer primary sources over news roundups; link to the most specific page.
+- Use official sources: the project's GitHub releases, changelog, docs or blog, or the company's
+  own announcement. Community blogs (dev.to, Medium) and aggregators only to find leads; then
+  open and cite the official page.
 - Facts only from pages you fetched, never from memory.
-- Save each finding right after you verify it on a fetched page; don't batch them up for the end.
-  Your turns are limited.
+- Work in parallel: call several tools in one turn whenever they don't depend on each other,
+  e.g. fetch 3-4 starting URLs at once, or several promising search results at once.
+- Save each finding right after you verify it on a fetched page; save several in one turn if
+  you can. Your turns are limited.
 - If a tool says something was rejected or blocked, adjust and move on; don't retry the same call.
 - Stop when you have saved 2-5 strong findings, or when good leads run out. To stop, reply with a
   one-line summary and no tool call. Saving nothing is fine if nothing qualifies."""
@@ -72,9 +78,11 @@ Judge only against the excerpt; don't use outside knowledge."""
 
 SELECT = """\
 You are the editor of a short tech digest for builders of agentic AI systems. From the numbered
-candidates, choose the {max_items} most important. Rank by: impact on what builders can do,
-novelty, and source quality. Merge near-duplicates by choosing only the best-sourced one. Drop
-anything vague, promotional, or outside the date window."""
+candidates, choose up to {max_items}, best first. Rank by: impact on what builders can do,
+novelty, and source quality (official sources beat community blogs). Merge near-duplicates by
+choosing only the best-sourced one. Drop anything that isn't news (tutorials, how-tos, opinion,
+overviews), anything vague or promotional, and anything outside the date window. Choosing fewer
+items, or none, is better than including weak ones."""
 
 WRITER = """\
 Write the digest as a Signal message for a group of agentic-AI builders.

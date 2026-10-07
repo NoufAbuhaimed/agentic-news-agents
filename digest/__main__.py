@@ -14,7 +14,7 @@ import argparse
 import logging
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import costs
@@ -24,7 +24,7 @@ from .observability import StepLogger, ping, setup_logging
 log = logging.getLogger("digest")
 
 
-def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()) -> dict | None:
+def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=(), since: str | None = None) -> dict | None:
     """Run the digest graph once. Returns {run_id, result, cost} or None when not due yet.
 
     on_update(node, update) is called after every graph step (used by the notebook to show progress).
@@ -32,6 +32,7 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
     from .graph import build_graph
     from .nodes import store
 
+    since_override = since
     db = store()
     now = datetime.now(timezone.utc)
     last = db.last_sent_at()
@@ -72,6 +73,8 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
             today = datetime.now(ZoneInfo(settings.timezone)).date()
             # One day of overlap so nothing falls between runs; dedupe stops repeats.
             since = (last.date() if last else today - timedelta(days=2)) - timedelta(days=1)
+            if since_override:
+                since = date.fromisoformat(since_override)
             log.info("starting run %s (news since %s)", run_id, since)
             result = execute(
                 {
@@ -128,6 +131,7 @@ def main() -> None:
     r = sub.add_parser("run")
     r.add_argument("--dry-run", action="store_true", help="research and write, print instead of sending")
     r.add_argument("--force", action="store_true", help="ignore the every-other-day gate")
+    r.add_argument("--since", help="override the start of the news window (YYYY-MM-DD), e.g. for demos")
     sub.add_parser("schedule")
     sub.add_parser("graph", help="show the architecture, built from the code")
     sub.add_parser("guardrails", help="offline demo of the guard rails")
@@ -147,7 +151,7 @@ def main() -> None:
         from .observability import RootRunCapture
 
         trace = RootRunCapture()
-        out = run(dry_run=args.dry_run, force=args.force, callbacks=[trace])
+        out = run(dry_run=args.dry_run, force=args.force, callbacks=[trace], since=args.since)
         if out:
             print_summary(out, trace.run_id)
     elif args.cmd == "schedule":

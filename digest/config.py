@@ -39,7 +39,8 @@ class Settings:
     search_max_uses: int = field(default_factory=lambda: int(_env("SEARCH_MAX_USES", "5")))
     pages_per_thread: int = field(default_factory=lambda: int(_env("PAGES_PER_THREAD", "8")))
     retry_search_max_uses: int = field(default_factory=lambda: int(_env("RETRY_SEARCH_MAX_USES", "3")))
-    agent_max_steps: int = field(default_factory=lambda: int(_env("AGENT_MAX_STEPS", "30")))
+    retry_max_steps: int = field(default_factory=lambda: int(_env("RETRY_MAX_STEPS", "12")))
+    agent_max_steps: int = field(default_factory=lambda: int(_env("AGENT_MAX_STEPS", "20")))
     page_max_chars: int = field(default_factory=lambda: int(_env("PAGE_MAX_CHARS", "12000")))  # kept for verification
     agent_page_chars: int = field(default_factory=lambda: int(_env("AGENT_PAGE_CHARS", "6000")))  # shown to the agent
     max_research_attempts: int = field(default_factory=lambda: int(_env("MAX_RESEARCH_ATTEMPTS", "2")))
