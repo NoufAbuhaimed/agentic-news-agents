@@ -2,6 +2,8 @@
 
 **Submitted by:** Nouf Abuhaimed · **Academy:** [@SDAIAAcademy](https://x.com/SDAIAAcademy)
 
+**📊 Slides:** [view the capstone presentation](https://noufabuhaimed.github.io/agentic-news-agents/slides/demo.html) (source: [`slides/demo.qmd`](slides/demo.qmd))
+
 A LangGraph multi-agent system that researches agentic-AI / LLM / dev-tools news and posts a
 digest to a Signal group every other day. Architecture diagrams: [docs/architecture.html](docs/architecture.html).
 
