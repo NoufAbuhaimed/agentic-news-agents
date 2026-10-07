@@ -166,3 +166,22 @@ def test_writer_falls_back_to_free_model(monkeypatch):
     monkeypatch.setattr(nodes, "free_chat", lambda m: Free())
     out = nodes.writer({"selected": [], "today": "2026-10-07", "revisions": 0})
     assert out["digest"] == "digest from free model"
+
+
+def test_free_json_falls_back_to_haiku_when_free_models_are_limited(monkeypatch):
+    from langchain_core.messages import AIMessage, HumanMessage
+
+    from digest import llm
+    from digest.state import Critique
+
+    class RateLimited:
+        def invoke(self, _):
+            raise RuntimeError("429 Rate limit exceeded: free-models-per-day")
+
+    class Haiku:
+        def invoke(self, _):
+            return AIMessage(content='{"passed": true, "problems": []}')
+
+    monkeypatch.setattr(llm, "free_chat", lambda m: RateLimited())
+    monkeypatch.setattr(llm, "agent_fallback_chat", lambda: Haiku())
+    assert llm.free_json([HumanMessage("review")], Critique).passed is True

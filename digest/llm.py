@@ -26,6 +26,7 @@ MAX_CONTINUATIONS = 4
 
 
 # --- Claude ------------------------------------------------------------------
+# Claude Sonnet: writes the final Signal message (the part the group actually reads).
 def writer_chat() -> ChatAnthropic:
     return ChatAnthropic(
         model=settings.writer_model,
@@ -37,6 +38,7 @@ def writer_chat() -> ChatAnthropic:
     )
 
 
+# Claude Haiku bound to Anthropic's server-side web_search tool: Anthropic runs the search.
 def search_chat(max_uses: int) -> ChatAnthropic:
     """Haiku with Anthropic's basic web search tool: it only searches, it doesn't read pages."""
     return ChatAnthropic(
@@ -47,6 +49,7 @@ def search_chat(max_uses: int) -> ChatAnthropic:
     ).bind_tools([{"type": "web_search_20250305", "name": "web_search", "max_uses": max_uses}])
 
 
+# Last-resort brain for the research agents when the free models are busy or down.
 def agent_fallback_chat() -> ChatAnthropic:
     """Claude Haiku as the research agent's last-resort model when free models are unavailable."""
     return ChatAnthropic(model=settings.search_model, max_tokens=4000, default_request_timeout=300, max_retries=2)
@@ -79,6 +82,7 @@ def search_results(response: AIMessage) -> list[dict]:
     return out
 
 
+# Turn unusual stop reasons (refusal, output cut off) into a clear error/warning.
 def check_stop(response: AIMessage) -> None:
     stop = response.response_metadata.get("stop_reason")
     if stop == "refusal":
@@ -88,6 +92,8 @@ def check_stop(response: AIMessage) -> None:
 
 
 # --- Free models via OpenRouter ----------------------------------------------
+# --- Free models via OpenRouter --------------------------------------------------------------
+# OpenRouter exposes an OpenAI-compatible API, so we use LangChain's ChatOpenAI with its URL.
 def free_chat(model: str) -> ChatOpenAI:
     return ChatOpenAI(
         model=model,
@@ -102,6 +108,7 @@ def free_chat(model: str) -> ChatOpenAI:
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
+# Find the JSON object in a model's reply and validate it against the Pydantic schema.
 def _parse(text: str, schema: type[T]) -> T:
     match = _JSON_RE.search(text.replace("```json", "").replace("```", ""))
     if not match:
@@ -132,4 +139,12 @@ def free_json(messages: list[BaseMessage], schema: type[T]) -> T:
                 errors.append(f"{model}: {e.__class__.__name__}: {str(e)[:120]}")
                 log.warning("free model %s failed: %s", model, str(e)[:160])
                 break  # move on to the next model
+    # Last resort: Claude Haiku (paid, ~1 cent per call), so a day where the free models are
+    # rate-limited or down doesn't stop the run.
+    try:
+        reply = agent_fallback_chat().invoke(list(messages) + [instructions])
+        log.warning("free models unavailable (%s); used Claude Haiku instead", "; ".join(errors)[:200])
+        return _parse(reply.text, schema)
+    except Exception as e:
+        errors.append(f"claude-haiku fallback: {e.__class__.__name__}: {str(e)[:120]}")
     raise RuntimeError("all free models failed: " + " | ".join(errors))
