@@ -4,6 +4,8 @@
 
 **📊 Slides:** [view the capstone presentation](https://noufabuhaimed.github.io/agentic-news-agents/slides/demo.html) (source: [`slides/demo.qmd`](slides/demo.qmd))
 
+**📖 New to the code?** Start with [CODE_GUIDE.md](CODE_GUIDE.md): one run followed file by file.
+
 A LangGraph multi-agent system that researches agentic-AI / LLM / dev-tools news and posts a
 digest to a Signal group every other day. Architecture diagrams: [docs/architecture.html](docs/architecture.html).
 
