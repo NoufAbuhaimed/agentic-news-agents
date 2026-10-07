@@ -1,5 +1,7 @@
 # Tech Digest
 
+**Submitted by:** Nouf Abuhaimed · **Academy:** [@SDAIAAcademy](https://x.com/SDAIAAcademy)
+
 A LangGraph multi-agent system that researches agentic-AI / LLM / dev-tools news and posts a
 digest to a Signal group every other day. Architecture diagrams: [docs/architecture.html](docs/architecture.html).
 
