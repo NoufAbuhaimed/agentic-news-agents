@@ -1,0 +1,26 @@
+title: SDAIA Slides
+author: Nouf
+version: 1.0.0
+quarto-required: ">=1.4.0"
+contributes:
+  formats:
+    revealjs:
+      theme: [default, sdaia.scss]
+      logo: assets/sdaia.svg
+      width: 1050
+      height: 700
+      margin: 0.1
+      center: false
+      navigation-mode: linear
+      controls: false
+      progress: true
+      slide-number: c/t
+      transition: slide
+      background-transition: fade
+      hash: true
+      embed-resources: true
+      menu:
+        side: left
+      filters:
+        - sdaia.lua
+      include-after-body: sdaia-mode.html

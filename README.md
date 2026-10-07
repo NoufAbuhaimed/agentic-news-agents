@@ -1,4 +1,4 @@
-# Tech Digest
+# Agentic News Agent
 
 **Submitted by:** Nouf Abuhaimed · **Academy:** [@SDAIAAcademy](https://x.com/SDAIAAcademy)
 

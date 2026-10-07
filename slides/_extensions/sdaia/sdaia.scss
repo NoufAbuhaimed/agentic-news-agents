@@ -1,0 +1,389 @@
+/*-- scss:defaults --*/
+// SDAIA slides theme (light + dark). Based on the theme used in
+// naifmersal/SDAIA-Building-Gen-AI-Apps, generalised with CSS variables
+// so the same deck can switch between light and dark at runtime.
+
+$body-bg: #ffffff;
+$body-color: #101820;
+$link-color: #00AE8D;
+$link-color-hover: #E96852;
+$selection-bg: #FFB548;
+$selection-color: #ffffff;
+$text-muted: #5b6678;
+$border-color: #dbe2ea;
+$code-block-bg: #f7f9fc;
+
+$callout-color-note: #625D9C;
+$callout-color-tip: #00AE8D;
+$callout-color-warning: #E96852;
+$callout-color-caution: #FFB548;
+$callout-color-important: #1C355E;
+
+$font-family-sans-serif: "Noto Sans", "Noto Sans Arabic", Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+$font-family-monospace: "JetBrains Mono", "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+$presentation-font-size-root: 32px;
+$presentation-heading-font: $font-family-sans-serif;
+$presentation-heading-color: #1C355E;
+$presentation-heading-font-weight: 600;
+$presentation-heading-line-height: 1.2;
+$presentation-heading-text-transform: none;
+$presentation-block-margin: 12px;
+
+/*-- scss:rules --*/
+
+/* ------------------------------------------------------------------
+   1. Tokens
+   Brand colours are fixed; surface tokens (--s-*) change with the mode.
+------------------------------------------------------------------- */
+:root {
+  --sdaia-navy: #1C355E;
+  --sdaia-coral: #E96852;
+  --sdaia-teal: #00AE8D;
+  --sdaia-purple: #625D9C;
+  --sdaia-cyan: #00c1de;
+  --sdaia-green: #6abf4b;
+  --sdaia-yellow: #FFB548;
+  --sdaia-coral-on-dark: #FF7A5C;
+  --sdaia-teal-on-dark: #00C9A7;
+  --sdaia-purple-on-dark: #9B8EC0;
+
+  /* light mode */
+  --s-bg: #ffffff;
+  --s-text: #101820;
+  --s-heading: #1C355E;
+  --s-muted: #5b6678;
+  --s-border: #dbe2ea;
+  --s-surface: rgba(28, 53, 94, .05);
+  --s-surface-strong: rgba(28, 53, 94, .08);
+  --s-code-bg: #f7f9fc;
+  --s-inline-code-bg: rgba(0, 193, 222, .10);
+  --s-inline-code-border: rgba(0, 193, 222, .18);
+  --s-coral: var(--sdaia-coral);
+  --s-teal: var(--sdaia-teal);
+  --s-purple: var(--sdaia-purple);
+  --s-navy-edge: var(--sdaia-navy);
+
+  /* accent (changed by the `accent` option) */
+  --s-accent: var(--sdaia-teal);
+  --s-accent-line: rgba(0, 174, 141, .35);
+  --s-accent-tint: rgba(0, 174, 141, .08);
+}
+
+html.sdaia-mode-dark {
+  --s-bg: #0d1828;
+  --s-text: #e6ebf2;
+  --s-heading: #ffffff;
+  --s-muted: #9aa8bb;
+  --s-border: rgba(255, 255, 255, .14);
+  --s-surface: rgba(255, 255, 255, .06);
+  --s-surface-strong: rgba(255, 255, 255, .09);
+  --s-code-bg: #132238;
+  --s-inline-code-bg: rgba(0, 201, 167, .14);
+  --s-inline-code-border: rgba(0, 201, 167, .28);
+  --s-coral: var(--sdaia-coral-on-dark);
+  --s-teal: var(--sdaia-teal-on-dark);
+  --s-purple: var(--sdaia-purple-on-dark);
+  --s-navy-edge: #7f9cc9;
+  --s-accent: var(--sdaia-teal-on-dark);
+  --s-accent-line: rgba(0, 201, 167, .45);
+  --s-accent-tint: rgba(0, 201, 167, .12);
+  color-scheme: dark;
+}
+
+html[data-sdaia-accent="coral"] { --s-accent: var(--s-coral); --s-accent-line: rgba(233, 104, 82, .40); --s-accent-tint: rgba(233, 104, 82, .09); }
+html[data-sdaia-accent="purple"] { --s-accent: var(--s-purple); --s-accent-line: rgba(98, 93, 156, .40); --s-accent-tint: rgba(98, 93, 156, .09); }
+html[data-sdaia-accent="navy"] { --s-accent: var(--s-navy-edge); --s-accent-line: rgba(28, 53, 94, .35); --s-accent-tint: rgba(28, 53, 94, .07); }
+html.sdaia-mode-dark[data-sdaia-accent="navy"] { --s-accent-line: rgba(127, 156, 201, .45); --s-accent-tint: rgba(127, 156, 201, .12); }
+
+/* Feed the tokens into reveal.js's own variables */
+:root, html.sdaia-mode-dark {
+  --r-background-color: var(--s-bg);
+  --r-main-color: var(--s-text);
+  --r-heading-color: var(--s-heading);
+  --r-link-color: var(--s-accent);
+  --r-link-color-hover: var(--s-coral);
+}
+
+.reveal-viewport { background-color: var(--s-bg); transition: background-color .25s ease; }
+
+/* ------------------------------------------------------------------
+   2. Base typography and layout
+------------------------------------------------------------------- */
+.reveal { font-variant-ligatures: none; color: var(--s-text); }
+.reveal .slides section { text-align: left; }
+.reveal .slides section h1 { font-size: 1.5em !important; }
+.reveal .slides section h2 { font-size: 1.3em !important; }
+.reveal .slides section h3 { font-size: 1.1em !important; }
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 { color: var(--s-heading); }
+
+.reveal h2 {
+  padding-bottom: .15em;
+  border-bottom: 3px solid var(--s-accent-line);
+  margin-bottom: .55em;
+}
+
+.reveal a { color: var(--s-accent); }
+.reveal ul li::marker, .reveal ol li::marker { color: var(--s-accent); }
+
+.reveal .slides section.title-slide { text-align: left; }
+.reveal .slides section#title-slide h1,
+.reveal .slides section#title-slide .subtitle,
+.reveal .slides section#title-slide .date,
+.reveal .slides section#title-slide .quarto-title-author-name { color: var(--s-heading); }
+.reveal .slides section#title-slide .subtitle { color: var(--s-text); }
+.reveal .slides section#title-slide .date { color: var(--s-muted); }
+
+/* ------------------------------------------------------------------
+   3. Components
+------------------------------------------------------------------- */
+.reveal .muted { color: var(--s-muted); }
+.reveal .accent { color: var(--s-coral); font-weight: 700; }
+.reveal .lead { font-size: 1.15em; line-height: 1.45; color: var(--s-text); }
+.reveal .small { font-size: .75em; }
+
+.reveal .kicker {
+  display: block;
+  font-size: .5em;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--s-accent);
+  margin-bottom: .3em;
+}
+
+.reveal .pill {
+  display: inline-block;
+  padding: .18em .55em;
+  border-radius: 999px;
+  font-size: .58em;
+  font-weight: 700;
+  letter-spacing: .02em;
+  border: 1px solid var(--s-border);
+  background: var(--s-accent-tint);
+  color: var(--s-heading);
+}
+
+.reveal blockquote {
+  width: auto;
+  border-left: 4px solid var(--s-accent);
+  padding: .5em .8em;
+  color: var(--s-text);
+  background: var(--s-accent-tint);
+  border-radius: 10px;
+  box-shadow: none;
+  font-style: normal;
+}
+
+.reveal table { border-collapse: collapse; width: 100%; font-size: .78em; }
+.reveal table th { color: var(--s-heading); border-bottom: 2px solid var(--s-border); padding: .35em .45em; }
+.reveal table td { color: var(--s-text); border-bottom: 1px solid var(--s-border); padding: .32em .45em; font-variant-numeric: tabular-nums; }
+.reveal table tr:last-child td { border-bottom: 0; }
+
+.reveal div.sourceCode { background: transparent; border: 0; }
+.reveal pre code {
+  background: var(--s-code-bg) !important;
+  color: var(--s-text);
+  border: 1px solid var(--s-border);
+  border-radius: 12px;
+  padding: .9em 1em !important;
+  line-height: 1.35em;
+}
+.reveal code:not(pre code) {
+  color: var(--s-text);
+  background: var(--s-inline-code-bg);
+  border: 1px solid var(--s-inline-code-border);
+  border-radius: 8px;
+  padding: .08em .28em;
+}
+.reveal .code-shrink pre code { font-size: .62em; }
+.reveal .code-shrink code:not(pre code) { font-size: .9em; }
+.reveal .code-shrink-xs pre code { font-size: .5em; }
+.reveal .code-shrink-xs code:not(pre code) { font-size: .85em; }
+
+.reveal .qbox {
+  border: 2px solid var(--s-border);
+  background: var(--s-surface);
+  border-radius: 16px;
+  padding: .9em 1em;
+}
+.reveal .qbox .qtitle { display: block; color: var(--s-heading); font-weight: 900; margin-bottom: .35em; }
+
+.reveal .cardbox {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-left: 4px solid var(--s-coral);
+  border-radius: 12px;
+  padding: .5em .8em;
+  margin-bottom: .5em;
+}
+.reveal .cardbox.teal { border-left-color: var(--s-teal); }
+.reveal .cardbox.purple { border-left-color: var(--s-purple); }
+.reveal .cardbox.navy { border-left-color: var(--s-navy-edge); }
+.reveal .cardbox h3, .reveal .cardbox p, .reveal .cardbox ul,
+.reveal .cardbox ol, .reveal .cardbox li { margin-top: .25em; margin-bottom: .25em; }
+
+/* Big number + label */
+.reveal .stat, .reveal .stat > p { display: flex; flex-direction: column; gap: .15em; margin: 0; }
+.reveal .stat .num, .reveal .stat .label { display: block; }
+.reveal .stat .num {
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--s-accent);
+  font-variant-numeric: tabular-nums;
+}
+.reveal .stat .label { font-size: .7em; color: var(--s-muted); }
+
+/* Numbered steps for real sequences */
+.reveal .steps ol { list-style: none; counter-reset: step; padding-left: 0; margin-left: 0; }
+.reveal .steps ol > li { counter-increment: step; position: relative; padding-left: 2.1em; margin-bottom: .55em; }
+.reveal .steps ol > li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: .05em;
+  width: 1.45em; height: 1.45em;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .8em; font-weight: 800;
+  color: var(--s-bg);
+  background: var(--s-accent);
+}
+
+/* Callouts */
+.reveal .callout { border-radius: 14px; }
+.reveal .callout-title-container { font-weight: 800; }
+html.sdaia-mode-dark .reveal div.callout {
+  background: var(--s-surface);
+  border-top-color: var(--s-border);
+  border-right-color: var(--s-border);
+  border-bottom-color: var(--s-border);
+}
+html.sdaia-mode-dark .reveal div.callout .callout-title { background-color: rgba(255, 255, 255, .05) !important; }
+html.sdaia-mode-dark .reveal div.callout .callout-title p,
+html.sdaia-mode-dark .reveal div.callout .callout-title-container,
+html.sdaia-mode-dark .reveal div.callout .callout-content { color: var(--s-text); }
+html.sdaia-mode-dark .reveal div.callout.callout-note { border-left-color: var(--sdaia-purple-on-dark); }
+html.sdaia-mode-dark .reveal div.callout.callout-tip { border-left-color: var(--sdaia-teal-on-dark); }
+html.sdaia-mode-dark .reveal div.callout.callout-warning { border-left-color: var(--sdaia-coral-on-dark); }
+html.sdaia-mode-dark .reveal div.callout.callout-important { border-left-color: #7f9cc9; }
+html.sdaia-mode-dark .reveal div.callout .callout-icon::before { filter: brightness(0) invert(1); opacity: .85; }
+
+/* Chrome: progress, slide number, footer, logo */
+.reveal .progress { height: 6px; }
+.reveal .progress span { background: var(--s-accent); }
+.reveal .slide-number { color: var(--s-muted) !important; background: transparent !important; font-size: .45em; letter-spacing: .02em; }
+.reveal .footer, .reveal .footer p { color: var(--s-muted) !important; }
+.reveal .footer.has-dark-background, .reveal .footer.has-dark-background p,
+.reveal .slide-number.has-dark-background { color: hsla(0, 0%, 100%, .75) !important; }
+html.sdaia-mode-dark .reveal .slide-logo { filter: brightness(0) invert(1); opacity: .9; }
+
+/* Syntax colours in dark mode */
+html.sdaia-mode-dark .reveal code span { color: #e6ebf2; }
+html.sdaia-mode-dark .reveal code span.kw,
+html.sdaia-mode-dark .reveal code span.cf { color: #8cc4ff; font-weight: 700; }
+html.sdaia-mode-dark .reveal code span.st,
+html.sdaia-mode-dark .reveal code span.ss,
+html.sdaia-mode-dark .reveal code span.vs,
+html.sdaia-mode-dark .reveal code span.ch { color: #7fe3c6; }
+html.sdaia-mode-dark .reveal code span.co,
+html.sdaia-mode-dark .reveal code span.do,
+html.sdaia-mode-dark .reveal code span.cv { color: #8796ab; font-style: italic; }
+html.sdaia-mode-dark .reveal code span.dv,
+html.sdaia-mode-dark .reveal code span.bn,
+html.sdaia-mode-dark .reveal code span.fl,
+html.sdaia-mode-dark .reveal code span.dt,
+html.sdaia-mode-dark .reveal code span.al,
+html.sdaia-mode-dark .reveal code span.er { color: #ffb27a; }
+html.sdaia-mode-dark .reveal code span.fu { color: #c7bbff; }
+html.sdaia-mode-dark .reveal code span.im { color: #6ad8ef; }
+html.sdaia-mode-dark .reveal code span.op,
+html.sdaia-mode-dark .reveal code span.sc { color: #a9b4c4; }
+html.sdaia-mode-dark .reveal code span.at { color: #bfe387; }
+html.sdaia-mode-dark .reveal pre.numberSource code > span > a:first-child::before { color: #5d6b80; }
+
+/* ------------------------------------------------------------------
+   4. Dark slides (section dividers, {.dark} slides)
+   Always white-on-colour, in both modes.
+------------------------------------------------------------------- */
+.reveal .slides section.has-dark-background,
+.reveal .slides section.has-dark-background h1,
+.reveal .slides section.has-dark-background h2,
+.reveal .slides section.has-dark-background h3,
+.reveal .slides section.has-dark-background h4,
+.reveal .slides section.has-dark-background p,
+.reveal .slides section.has-dark-background li,
+.reveal .slides section.sdaia-dark,
+.reveal .slides section.sdaia-dark h1,
+.reveal .slides section.sdaia-dark h2,
+.reveal .slides section.sdaia-dark h3,
+.reveal .slides section.sdaia-dark h4,
+.reveal .slides section.sdaia-dark p,
+.reveal .slides section.sdaia-dark li { color: #fff !important; }
+.reveal .slides section.sdaia-dark h2 { border-bottom-color: hsla(0, 0%, 100%, .5); }
+.reveal .slides section.sdaia-dark a { color: var(--sdaia-yellow); }
+.reveal .slides section.sdaia-dark .muted { color: hsla(0, 0%, 100%, .8); }
+.reveal .slides section.sdaia-dark .kicker { color: hsla(0, 0%, 100%, .85); }
+.reveal .slides section.sdaia-dark .accent { color: var(--sdaia-coral-on-dark); }
+.reveal .slides section.sdaia-dark .pill { border-color: hsla(0, 0%, 100%, .25); background: hsla(0, 0%, 100%, .1); color: #fff; }
+.reveal .slides section.sdaia-dark .stat .num { color: #fff; }
+.reveal .slides section.sdaia-dark .stat .label { color: hsla(0, 0%, 100%, .8); }
+.reveal .slides section.sdaia-dark .cardbox {
+  background: hsla(0, 0%, 100%, .08);
+  border-color: hsla(0, 0%, 100%, .18);
+  border-left-color: var(--sdaia-coral-on-dark);
+}
+.reveal .slides section.sdaia-dark .callout {
+  background-color: hsla(0, 0%, 100%, .05) !important;
+  border-color: hsla(0, 0%, 100%, .15) !important;
+}
+.reveal .slides section.sdaia-dark .callout .callout-title { background-color: hsla(0, 0%, 100%, .05) !important; }
+.reveal .slides section.sdaia-dark .callout .callout-title p,
+.reveal .slides section.sdaia-dark .callout .callout-title-container,
+.reveal .slides section.sdaia-dark .callout .callout-content,
+.reveal .slides section.sdaia-dark .callout .callout-content * { color: #fff !important; }
+.reveal .slides section.sdaia-dark .callout .callout-icon::before { filter: brightness(0) invert(1) !important; opacity: .9; }
+.reveal .slides section.sdaia-dark .callout.callout-important { border-left-color: var(--sdaia-coral-on-dark) !important; }
+
+/* Section dividers: large title, optional subtitle paragraph */
+.reveal .slides section.sdaia-section h1 { font-size: 1.9em !important; margin-bottom: .25em; }
+.reveal .slides section.sdaia-section p { font-size: .9em; opacity: .9; }
+
+/* ------------------------------------------------------------------
+   5. Mode toggle button
+------------------------------------------------------------------- */
+.sdaia-mode-toggle {
+  position: fixed;
+  left: 14px;
+  top: 12px;
+  z-index: 40;
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--s-border);
+  background: var(--s-bg);
+  color: var(--s-heading);
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .2s ease, background-color .25s ease;
+}
+.sdaia-mode-toggle:hover, .sdaia-mode-toggle:focus-visible { opacity: 1; }
+.sdaia-mode-toggle:focus-visible { outline: 2px solid var(--s-accent); outline-offset: 2px; }
+.sdaia-mode-toggle svg { width: 18px; height: 18px; }
+.sdaia-mode-toggle .moon { display: none; }
+html.sdaia-mode-dark .sdaia-mode-toggle .sun { display: none; }
+html.sdaia-mode-dark .sdaia-mode-toggle .moon { display: block; }
+.print-pdf .sdaia-mode-toggle { display: none; }
+
+/* ------------------------------------------------------------------
+   6. Right-to-left (Arabic) decks: lang: ar / dir: rtl
+------------------------------------------------------------------- */
+html[dir=rtl] .reveal .slides section,
+html[dir=rtl] .reveal .slides section.title-slide,
+html[dir=rtl] .reveal .slides section p { text-align: right; }
+html[dir=rtl] .reveal ul, html[dir=rtl] .reveal ol { text-align: right; direction: rtl; }
+html[dir=rtl] .reveal blockquote { border-left: none; border-right: 4px solid var(--s-accent); }
+html[dir=rtl] .reveal .cardbox { border-left: 1px solid var(--s-border); border-right: 4px solid var(--s-coral); }
+html[dir=rtl] .reveal table { direction: rtl; }
+html[dir=rtl] .reveal pre, html[dir=rtl] .reveal code { direction: ltr; text-align: left; }
+html[dir=rtl] .reveal .steps ol > li { padding-left: 0; padding-right: 2.1em; }
+html[dir=rtl] .reveal .steps ol > li::before { left: auto; right: 0; }

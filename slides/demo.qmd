@@ -1,0 +1,326 @@
+---
+title: "Agentic News Agent"
+subtitle: "A multi-agent research system that posts agentic-AI news to Signal"
+author: "Nouf Abuhaimed · SDAIA Academy"
+date: today
+format:
+  sdaia-revealjs:
+    mermaid:
+      theme: neutral
+footer: "SDAIA · Building Gen AI Apps · Capstone project"
+sdaia:
+  mode: auto
+  toggle: true
+  accent: teal
+  title-background: true
+---
+
+# The problem {.section-teal}
+
+Agentic AI moves faster than anyone can read
+
+## Why build this?
+
+[Goal]{.kicker}
+
+[Every other day, a short, verified digest of what changed in agentic AI lands in our team's Signal group, with no one having to search for it.]{.lead}
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.cardbox .teal}
+**What it covers** LLM releases for agents, agent frameworks and SDKs, the MCP / tool ecosystem, and open-source agent tooling.
+:::
+:::
+::: {.column width="50%"}
+::: {.cardbox}
+**What it must not do** Invent facts, cite pages it never read, repeat old news, or overspend.
+:::
+:::
+::::
+
+## A real digest, posted to Signal
+
+```text
+🤖 Agentic AI digest · 2026-10-07
+
+1. **Claude can now create and edit Google Docs, Sheets, Slides**
+Claude works with Google Docs, Sheets, and Slides through a public beta
+add-on and connectors, so agents can edit Google files directly from chat.
+https://releasebot.io/updates/anthropic
+
+2. **MCP Hub CLI launches as MCP servers pass 13,000**
+The new MCP Hub CLI uses a central registry to discover, install, and
+publish servers, which should reduce integration friction.
+https://dev.to/grahamduescn/mcp-in-2026-the-numbers-behind-the-ecosystem-explosion-2b8e
+...
+```
+
+[Posted by the live run on 7 Oct 2026 to the **Research agent** group.]{.muted}
+
+# Architecture {.section-purple}
+
+A LangGraph graph of `create_agent` agents
+
+## The main graph (LangGraph)
+
+```{=html}
+<svg viewBox="0 0 980 290" width="100%" role="img" aria-label="Main LangGraph graph" style="color: var(--r-main-color, currentColor)">
+<style>
+ .n { fill: rgba(20,160,150,0.12); stroke: #14a096; stroke-width: 1.6; }
+ .t { fill: currentColor; font: 600 17px var(--r-main-font, sans-serif); text-anchor: middle; }
+ .s { fill: currentColor; opacity: .7; font: 14px var(--r-main-font, sans-serif); text-anchor: middle; }
+ .l { fill: currentColor; opacity: .75; font: 13px var(--r-main-font, sans-serif); text-anchor: middle; }
+ .e { stroke: currentColor; stroke-width: 1.6; opacity: .8; }
+</style>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect x="15" y="92" width="112" height="60" rx="10" class="n"/>
+<text x="71.0" y="129" class="t">planner</text>
+<rect x="153" y="92" width="112" height="60" rx="10" class="n" stroke-width="3"/>
+<text x="209.0" y="118" class="t">research</text><text x="209.0" y="139" class="s">agents ×4</text>
+<rect x="291" y="92" width="112" height="60" rx="10" class="n"/>
+<text x="347.0" y="129" class="t">fact_check</text>
+<rect x="429" y="92" width="112" height="60" rx="10" class="n"/>
+<text x="485.0" y="129" class="t">select</text>
+<rect x="567" y="92" width="112" height="60" rx="10" class="n"/>
+<text x="623.0" y="129" class="t">writer</text>
+<rect x="705" y="92" width="112" height="60" rx="10" class="n"/>
+<text x="761.0" y="129" class="t">critic</text>
+<rect x="843" y="92" width="112" height="60" rx="10" class="n"/>
+<text x="899.0" y="129" class="t">send</text>
+<line x1="127" y1="122.0" x2="151" y2="122.0" class="e" stroke-dasharray="6 5" marker-end="url(#ah)"/><text x="139.0" y="114.0" class="l">×4</text>
+<line x1="265" y1="122.0" x2="289" y2="122.0" class="e" marker-end="url(#ah)"/>
+<line x1="403" y1="122.0" x2="427" y2="122.0" class="e" stroke-dasharray="6 5" marker-end="url(#ah)"/><text x="415.0" y="114.0" class="l">ok</text>
+<line x1="541" y1="122.0" x2="565" y2="122.0" class="e" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<line x1="679" y1="122.0" x2="703" y2="122.0" class="e" marker-end="url(#ah)"/>
+<line x1="817" y1="122.0" x2="841" y2="122.0" class="e" stroke-dasharray="6 5" marker-end="url(#ah)"/><text x="829.0" y="114.0" class="l">ok</text>
+<path d="M 347.0 92 C 347.0 30, 209.0 30, 209.0 89" class="e" stroke-dasharray="6 5" fill="none" marker-end="url(#ah)"/><text x="278.0" y="42" class="l">retry weak topic (once)</text>
+<path d="M 761.0 92 C 761.0 30, 623.0 30, 623.0 89" class="e" stroke-dasharray="6 5" fill="none" marker-end="url(#ah)"/><text x="692.0" y="42" class="l">fix (≤ 2×)</text>
+<rect x="630" y="232" width="90" height="38" rx="19" class="n"/><text x="675" y="257" class="t">END</text>
+<path d="M 485.0 152 C 485.0 251, 595 251, 628 251" class="e" stroke-dasharray="6 5" fill="none" marker-end="url(#ah)"/>
+<text x="505.0" y="280" class="l">nothing new</text>
+<path d="M 899.0 152 C 899.0 251, 755 251, 722 251" class="e" fill="none" marker-end="url(#ah)"/>
+</svg>
+```
+
+- **Dashed arrows are conditional** routes: the graph decides at run time
+- `select` ends the run when there's nothing new, so no empty messages are sent
+- 7 nodes · 11 edges · 5 conditional, printed straight from the code with `python -m digest graph`
+
+## Not a sequential chain {.smaller}
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.cardbox .teal}
+**Planner decomposes the query** into 4 research topics, with starting URLs checked for being real.
+:::
+
+::: {.cardbox .purple}
+**Parallel branches.** LangGraph `Send` runs 4 research agents at the same time.
+:::
+
+::: {.cardbox .navy}
+**Fact-check retry loop** sends an empty topic back to its agent once, with feedback, unless 3+ items are already verified.
+:::
+:::
+::: {.column width="50%"}
+::: {.cardbox}
+**Quality loop.** The critic sends the draft back to the writer (at most 2 revisions).
+:::
+
+::: {.cardbox .teal}
+**Conditional routing.** No new verified news means END: no empty messages.
+:::
+
+::: {.cardbox .purple}
+**Checkpoints** after every step, so a crashed run resumes where it stopped.
+:::
+:::
+::::
+
+## Inside a research agent
+
+:::: {.columns}
+::: {.column width="45%"}
+```{mermaid}
+%%| fig-width: 4
+flowchart TB
+  M{{"model<br/>decides next step"}} -- "tool call" --> T[tools]
+  T -- result --> M
+  M -- "no tool call<br/>= done" --> O([findings])
+  G[guard rails] -.-> M
+```
+:::
+::: {.column width="55%"}
+Built with LangChain **`create_agent`**: the model picks a tool, reads the result, and **stops when it answers without a tool call**.
+
+| Tool | Job |
+|---|---|
+| `web_search` | Anthropic search via Claude Haiku |
+| `fetch_page` | Free page reading |
+| `check_already_sent` | Memory of past digests |
+| `save_finding` | Saves only verified items |
+:::
+::::
+
+# Reliability {.section-coral}
+
+The agents can't publish what they didn't verify
+
+## Guard rails in the tools
+
+::: {.steps}
+1. **Seen URLs only.** `fetch_page` opens only URLs from the starting list, search results, or links on pages already read. No guessing from memory.
+2. **Exact quotes.** `save_finding` rejects an item unless its `evidence_quote` appears on a page the agent actually fetched.
+3. **Real dates.** The publication date must be shown on that page and fall inside the window.
+4. **Fact-check against the source.** A second model compares each summary with the page excerpt and rejects unsupported claims.
+:::
+
+## Guard rails in action
+
+| The agent tries to… | The tool answers |
+|---|---|
+| save a finding from a page it **never read** | [Rejected: you haven't fetched that page]{.accent} |
+| save an **invented quote** | [Rejected: the quote must be copied exactly from the page]{.accent} |
+| claim a **date that isn't on the page** | [Rejected: that date doesn't appear on the page]{.accent} |
+| open a URL **guessed from memory** | [Not allowed: use web_search to find it first]{.accent} |
+| repeat the **same search** twice | [Loop detected; repeats stop the agent]{.accent} |
+| save a **real, verified** finding | Saved ✅ |
+
+## Limits, fallbacks, budget
+
+:::: {.columns}
+::: {.column width="33%"}
+::: {.stat}
+[20]{.num}
+[model turns per agent (12 on retry)]{.label}
+:::
+:::
+::: {.column width="33%"}
+::: {.stat}
+[5]{.num}
+[searches per agent (3 on retry)]{.label}
+:::
+:::
+::: {.column width="33%"}
+::: {.stat}
+[$1]{.num}
+[hard budget per run]{.label}
+:::
+:::
+::::
+
+- `ModelCallLimitMiddleware`, `ToolCallLimitMiddleware`, and our own **`LoopDetector`** and **`TimeLimit`** (4 min per agent, 2 on retry)
+- `ModelFallbackMiddleware`: free model → second free model → Claude Haiku
+- If search is down (outage, no credits), agents keep going with free page reading; the writer falls back to a free model
+
+# Observability {.section-navy}
+
+Seeing what every agent did, and what it cost
+
+## What we can see
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.cardbox .teal}
+**LangSmith tracing** Every node, agent turn, tool call and token count in one trace per run.
+:::
+
+::: {.cardbox .purple}
+**Cost per run** A callback prices every Claude call and search, by model, against the $1 budget.
+:::
+:::
+::: {.column width="50%"}
+::: {.cardbox .navy}
+**Step log** One line per node and per tool the agents choose: `🔧 fetch_page(...)`.
+:::
+
+::: {.cardbox}
+**Memory** SQLite: links already posted, sources that produced news (read by the planner), run history with cost.
+:::
+:::
+::::
+
+## Crash recovery, for real
+
+::: {.callout-warning}
+## Mid-run, the API credits ran out
+`Your credit balance is too low to access the Anthropic API`. One agent had finished; three crashed.
+:::
+
+::: {.steps}
+1. The run was marked **failed**, and its LangGraph checkpoint was kept
+2. After credits were added, the next run printed `resuming unfinished run … from its last checkpoint`
+3. The planner and the finished agent were **not** run again, so their cost wasn't paid twice
+4. The crash also led to a fix: search failures now degrade gracefully instead of crashing the agent
+:::
+
+# Live demo {.section-sunset}
+
+## Four commands
+
+::: {.steps}
+1. `python -m digest graph`: the architecture, printed from the code
+2. `python -m digest guardrails`: the guard rails catching a careless agent (free)
+3. `python -m pytest -q`: **28 offline tests** (guard rails, routing, retry loop, memory, cost, time limits)
+4. `python -m digest run --dry-run`: a real run on today's news, step by step
+:::
+
+[Add `--force` instead of `--dry-run` to post the digest to Signal.]{.muted}
+
+## The live run that posted to Signal
+
+:::: {.columns}
+::: {.column width="25%"}
+::: {.stat}
+[10]{.num}
+[minutes]{.label}
+:::
+:::
+::: {.column width="25%"}
+::: {.stat}
+[$0.53]{.num}
+[total cost]{.label}
+:::
+:::
+::: {.column width="25%"}
+::: {.stat}
+[24]{.num}
+[web searches]{.label}
+:::
+:::
+::: {.column width="25%"}
+::: {.stat}
+[3]{.num}
+[items posted]{.label}
+:::
+:::
+::::
+
+| Step | What happened |
+|---|---|
+| planner | 4 topics; 10 of 20 suggested URLs were real, and the rest were dropped |
+| 4 agents (parallel) | 5 findings saved; the loop detector stopped one agent |
+| fact_check | 4 supported, 1 rejected; 2 empty topics retried once |
+| select → writer → critic | 3 items chosen; critic passed the first draft; posted |
+
+# Lessons learned {.section-teal}
+
+## Real runs found real bugs
+
+| What we saw | Cause | Fix |
+|---|---|---|
+| 14 pages "could not be read" | The planner invented article URLs from memory | Planner gives index pages only; dead URLs are dropped before agents start |
+| Old news ("Claude 4 release") | Agents could claim any date | The date must appear on the fetched page |
+| All 4 findings rejected | Summary checked against **one** quoted sentence | Fact-check against a page excerpt |
+| Window shrank to 1 day | An empty run counted as "sent" | Empty runs are recorded separately |
+
+::: {.callout-tip}
+The test suite grew from 22 to 28 as these fixes landed: date checks, empty runs, outages, the editor and time limits.
+:::
+
+## Takeaways {.dark}
+
+- **Agents decide; code verifies.** The model chooses tools freely, but nothing reaches the group unless it's on a page the agent really read
+- [Graphs beat chains]{.accent}: parallel agents, a fact-check retry loop and a quality loop, each with a clear exit
+- **Spend money only where it matters**: free models for reasoning, Claude for search and writing, and a hard budget per run
+- **Test with real runs.** Every major bug was found by running the system for real
