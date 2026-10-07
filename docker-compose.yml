@@ -1,0 +1,22 @@
+services:
+  signal-api:
+    image: bbernhard/signal-cli-rest-api:latest
+    restart: unless-stopped
+    environment:
+      - MODE=json-rpc          # keeps signal-cli running and syncing, so the linked device stays active
+    volumes:
+      - ./signal-data:/home/.local/share/signal-cli   # linked-device keys: back this up
+    ports:
+      - "127.0.0.1:8080:8080"  # localhost only, never expose to the internet
+
+  worker:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - SIGNAL_API_URL=http://signal-api:8080
+      - DATA_DIR=/data
+    volumes:
+      - ./data:/data           # sent-links DB, checkpoints, logs
+    depends_on:
+      - signal-api

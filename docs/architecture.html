@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech Digest Architecture</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --muted:#57534e; --card:#ffffff; --line:#e7e5e4; --accent:#7c3aed; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1917; --fg:#f5f5f4; --muted:#a8a29e; --card:#292524; --line:#44403c; --accent:#a78bfa; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 -apple-system, system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:19px; margin:36px 0 6px; }
+  p.sub { color:var(--muted); margin:0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; overflow-x:auto; }
+  .tag { display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); margin-right:6px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; } td, th { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .mermaid { text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tech Digest: Architecture</h1>
+  <p class="sub">A LangGraph multi-agent system that researches agentic-AI news and posts a digest to Signal. All parts below are built and tested.</p>
+
+  <h2>1 · Main graph (generated from the code)</h2>
+  <p class="sub"><span class="tag">exact</span>The nodes and edges are taken from <code>build_graph().get_graph()</code> (7 nodes, 11 edges). Dashed arrows are conditional edges.</p>
+  <div class="card"><pre class="mermaid">
+flowchart TB
+  S([START]) --> P[planner]
+  P -. "Send × topics<br/>(parallel)" .-> R[["researcher<br/><i>create_agent subgraph</i>"]]
+  R --> FC[fact_check]
+  FC -. "empty topic:<br/>Send back (retry)" .-> R
+  FC -. "ok / retried" .-> SEL[select]
+  SEL -. "no new items" .-> E([END])
+  SEL -. "items" .-> W[writer]
+  W --> C[critic]
+  C -. "problems,<br/>revisions ≤ 2" .-> W
+  C -. "passed" .-> SEND[send]
+  SEND --> E
+  </pre></div>
+
+  <h2>2 · Main graph explained</h2>
+  <p class="sub"><span class="tag">built</span>The graph above with what each node does. The <b>fact_check</b> node that can send a weak topic back to its research agent once. Each research agent is a <code>create_agent</code> subgraph (diagram 3).</p>
+  <div class="card"><pre class="mermaid">
+flowchart TB
+  S([START]) --> P["<b>planner</b><br/>splits the brief into 4 topics<br/><i>free model</i>"]
+  P -. "Send: one per topic<br/>(4 in parallel)" .-> RA[["<b>research agent</b> × 4<br/>create_agent subgraph<br/><i>see diagram 3</i>"]]
+  RA --> FC["<b>fact_check</b><br/>empty topic? unsupported claims?<br/><i>code + free model</i>"]
+  FC -. "weak topic, first time:<br/>Send back with feedback" .-> RA
+  FC -. "ok, or already retried" .-> SEL["<b>select</b><br/>dedupe against memory · rank top 7<br/><i>code + free model</i>"]
+  SEL -. "no new items" .-> E([END])
+  SEL -. "items" .-> W["<b>writer</b><br/>Signal message<br/><i>Claude Sonnet</i>"]
+  W --> C["<b>critic</b><br/>length · URLs · claims<br/><i>code + free model</i>"]
+  C -. "problems,<br/>revisions ≤ 2" .-> W
+  C -. "passed" .-> SEND["<b>send</b><br/>post to Signal · record sent links"]
+  SEND --> E
+  </pre></div>
+
+  <h2>3 · Inside one research agent (create_agent)</h2>
+  <p class="sub"><span class="tag">built</span>The model picks a tool, reads the result and repeats. It stops when it answers without a tool call. Middleware enforces the limits.</p>
+  <div class="card"><pre class="mermaid">
+flowchart TB
+  IN(["topic + date window<br/>(+ feedback on a retry)"]) --> M
+  M{{"<b>model node</b><br/>decides the next step<br/><i>Nemotron (free) → Claude Haiku fallback</i>"}}
+  M -- "tool call" --> TN["<b>tools node</b>"]
+  TN --> T1["web_search(query)<br/><i>Anthropic search via Haiku</i>"]
+  TN --> T2["fetch_page(url)<br/><i>free; only URLs it has seen</i>"]
+  TN --> T3["check_already_sent(url)<br/><i>long-term memory</i>"]
+  TN --> T4["save_finding(item)<br/><i>rejects: page not fetched, quote not on page,<br/>date not on page, outside window</i>"]
+  T1 & T2 & T3 & T4 -- "result back to the model" --> M
+  M -- "no tool call = done" --> OUT(["findings → fact_check"])
+  G["<b>guard rails (middleware)</b><br/>model-call limit · tool-call limits<br/>repeated-call loop detector · retries"] -.-> M
+  </pre></div>
+
+  <h2>4 · Runtime and services</h2>
+  <div class="card"><pre class="mermaid">
+flowchart TB
+  subgraph HOST["Mac now · always-on server later (Docker Compose)"]
+    direction TB
+    SCH["scheduler<br/>daily 08:00, sends if ≥ 47h since last"] --> GRAPH["LangGraph app<br/>(diagrams 2–3)"]
+    GRAPH --> DB[("digest.sqlite<br/>sent links · run history<br/><i>long-term memory</i>")]
+    GRAPH --> CK[("checkpoints.sqlite<br/>state after every step<br/><i>resume after a crash</i>")]
+    GRAPH --> LOG[("logs/digest.log")]
+    GRAPH --> SIG["signal-api container<br/>signal-cli, linked device"]
+  end
+  GRAPH <--> ANT["Anthropic API<br/>Haiku + web search · Sonnet writer"]
+  GRAPH <--> OR["OpenRouter<br/>free models"]
+  GRAPH <--> WEB["Websites<br/>pages read for free"]
+  GRAPH --> LS["LangSmith<br/>traces · tokens · cost"]
+  SIG --> GROUP(["Signal group<br/>Research agent"])
+  </pre></div>
+
+  <h2>Rubric mapping</h2>
+  <div class="card"><table>
+    <tr><th>Pattern</th><th>Where</th><th>Status</th></tr>
+    <tr><td>Planner decomposes the query</td><td>planner → 4 topics</td><td>✅ built</td></tr>
+    <tr><td>Parallel branches</td><td>Send fan-out to researchers</td><td>✅ built</td></tr>
+    <tr><td>Conditional routing</td><td>select → END/writer; critic → writer/send</td><td>✅ built</td></tr>
+    <tr><td>Quality loop</td><td>writer ⇄ critic</td><td>✅ built</td></tr>
+    <tr><td>Agent loop (create_agent) + tools</td><td>research agent with 4 tools</td><td>✅ built</td></tr>
+    <tr><td>Fact-check retry loop back to the researcher</td><td>fact_check → research agent</td><td>✅ built</td></tr>
+    <tr><td>Loop detection</td><td>LoopDetector + call-limit middleware</td><td>✅ built</td></tr>
+    <tr><td>Memory</td><td>sent links (long-term) · checkpoints (short-term)</td><td>✅ built (check_already_sent tool, source memory for the planner)</td></tr>
+    <tr><td>Cost budget</td><td>CostTracker, hard $1 cap per run</td><td>✅ built</td></tr>
+    <tr><td>Automated tests</td><td>tests/ (22 tests, offline)</td><td>✅ built</td></tr>
+  </table></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', flowchart: { htmlLabels: true, curve: 'basis' }, securityLevel: 'loose' });
+</script>
+</body>
+</html>

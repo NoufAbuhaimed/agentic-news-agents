@@ -1,0 +1,16 @@
+# Agent graph + agents (create_agent) + Claude
+langchain==1.4.3
+langgraph==1.2.13
+langgraph-checkpoint-sqlite==3.1.1
+langchain-anthropic==1.7.5
+langchain-openai==1.6.7
+langchain-core==1.6.6
+anthropic==1.11.0
+# Tracing (LangSmith; enabled via env vars)
+langsmith==0.14.4
+# Page reading (free, no LLM)
+trafilatura==2.3.0
+# Signal REST client, config, schemas
+httpx==0.28.1
+python-dotenv==1.2.4
+pydantic==2.13.5
