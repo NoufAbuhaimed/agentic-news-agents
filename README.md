@@ -2,7 +2,7 @@
 
 **Submitted by:** Nouf Abuhaimed · **Academy:** [@SDAIAAcademy](https://x.com/SDAIAAcademy)
 
-**📊 Slides:** [view the capstone presentation](https://noufabuhaimed.github.io/agentic-news-agents/slides/demo.html) (source: [`slides/demo.qmd`](slides/demo.qmd))
+**📊 Slides:** [view the capstone presentation](https://noufabuhaimed.github.io/agentic-news-agents/slides/demo.html) 
 
 **📖 New to the code?** Start with [CODE_GUIDE.md](CODE_GUIDE.md): one run followed file by file.
 
