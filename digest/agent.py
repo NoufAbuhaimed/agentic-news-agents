@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from collections import Counter
 
 from langchain.agents import create_agent
@@ -67,7 +68,29 @@ class LoopDetector(AgentMiddleware):
         return None
 
 
-def build_research_agent(ctx: ResearchContext, search_limit: int, max_steps: int | None = None):
+class TimeLimit(AgentMiddleware):
+    """Stops the agent once its time is up; findings saved so far are kept."""
+
+    def __init__(self, label: str, seconds: float):
+        super().__init__()
+        self.label = label
+        self.seconds = seconds
+        self.started: float | None = None
+
+    @hook_config(can_jump_to=["end"])
+    def before_model(self, state, runtime):
+        now = time.monotonic()
+        if self.started is None:
+            self.started = now
+        elif now - self.started > self.seconds:
+            log.info("time limit[%s]: %.0fs used, stopping the agent", self.label, now - self.started)
+            return {"jump_to": "end", "messages": [AIMessage("Stopped: time limit reached.")]}
+        return None
+
+
+def build_research_agent(
+    ctx: ResearchContext, search_limit: int, max_steps: int | None = None, time_limit_s: float | None = None
+):
     models = list(settings.free_models)
     return create_agent(
         free_chat(models[0]),
@@ -81,6 +104,7 @@ def build_research_agent(ctx: ResearchContext, search_limit: int, max_steps: int
             ToolCallLimitMiddleware(tool_name="web_search", run_limit=search_limit, exit_behavior="continue"),
             ToolCallLimitMiddleware(tool_name="fetch_page", run_limit=settings.pages_per_thread, exit_behavior="continue"),
             LoopDetector(ctx.thread.name),
+            TimeLimit(ctx.thread.name, time_limit_s or settings.agent_time_limit_s),
         ],
         name="research_agent",
     )

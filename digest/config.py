@@ -43,6 +43,9 @@ class Settings:
     agent_max_steps: int = field(default_factory=lambda: int(_env("AGENT_MAX_STEPS", "20")))
     page_max_chars: int = field(default_factory=lambda: int(_env("PAGE_MAX_CHARS", "12000")))  # kept for verification
     agent_page_chars: int = field(default_factory=lambda: int(_env("AGENT_PAGE_CHARS", "6000")))  # shown to the agent
+    agent_time_limit_s: int = field(default_factory=lambda: int(_env("AGENT_TIME_LIMIT_S", "240")))
+    retry_time_limit_s: int = field(default_factory=lambda: int(_env("RETRY_TIME_LIMIT_S", "120")))
+    enough_items: int = field(default_factory=lambda: int(_env("ENOUGH_ITEMS", "3")))  # skip retries at/above this
     max_research_attempts: int = field(default_factory=lambda: int(_env("MAX_RESEARCH_ATTEMPTS", "2")))
 
     # Hard spending cap per run (USD). Once reached, agents stop searching and the run wraps up.

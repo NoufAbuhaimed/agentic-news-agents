@@ -110,8 +110,9 @@ def researcher(inp: ResearcherInput) -> dict:
     # Retries get a smaller search allowance so a weak topic can't double the run's cost.
     search_limit = settings.search_max_uses if attempt == 1 else settings.retry_search_max_uses
     max_steps = settings.agent_max_steps if attempt == 1 else settings.retry_max_steps
+    time_limit = settings.agent_time_limit_s if attempt == 1 else settings.retry_time_limit_s
     task += f"\n\nBudget: at most {search_limit} web searches and {settings.pages_per_thread} page fetches."
-    agent = build_research_agent(ctx, search_limit, max_steps)
+    agent = build_research_agent(ctx, search_limit, max_steps, time_limit)
     try:
         # Each agent turn is ~8 graph steps (model, tools, middleware hooks); our own limits stop it first.
         result = agent.invoke({"messages": [HumanMessage(task)]}, {"recursion_limit": 10 * settings.agent_max_steps + 10})
@@ -164,6 +165,10 @@ def after_fact_check(state: DigestState):
     """Send topics with no verified findings back to research once, with feedback."""
     if costs.over_budget():
         log.warning("budget reached; no research retries")
+        return "select"
+    have_total = len(state.get("checked", []))
+    if have_total >= settings.enough_items:
+        log.info("fact_check: %d verified items is enough; skipping retries", have_total)
         return "select"
     retries = []
     for t in state["threads"]:

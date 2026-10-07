@@ -151,3 +151,19 @@ def test_empty_run_does_not_move_the_window(tmp_path):
     db.start_run("r2")
     db.finish_run("r2", "sent", 0.4)
     assert db.last_sent_at() is not None
+
+
+def test_no_retries_when_first_round_found_enough():
+    state = base_state(checked=[cand(f"https://x.dev/{i}") for i in range(settings.enough_items)])  # all topic A
+    assert nodes.after_fact_check(state) == "select"  # topic B is empty, but we already have enough
+
+
+def test_time_limit_stops_agent(monkeypatch):
+    from digest import agent as agent_mod
+
+    clock = iter([100.0, 100.0 + 30, 100.0 + 300])
+    monkeypatch.setattr(agent_mod.time, "monotonic", lambda: next(clock))
+    tl = agent_mod.TimeLimit("t", seconds=240)
+    assert tl.before_model({}, None) is None          # first turn: starts the clock
+    assert tl.before_model({}, None) is None          # 30s in: keep going
+    assert tl.before_model({}, None)["jump_to"] == "end"  # 300s in: stop
