@@ -35,7 +35,12 @@ Split the brief into exactly 4 non-overlapping research threads. For each, give 
 3-5 starting points: full https URLs of index pages that list recent news, such as a GitHub
 releases page (https://github.com/<org>/<repo>/releases), a changelog, or a blog's main page.
 Never give URLs of individual articles or releases; you can't know those in advance.
-If you're told which sources produced published items before, favor them as starting points."""
+If you're told which sources produced published items before, favor them as starting points.
+
+You may also get today's newsletter headlines, each with a link to its original source. These are
+real, current links: for every headline that fits one of your threads, add its link to that thread's
+starting points (you may then use up to 8 starting points). Ignore headlines that fit no thread;
+the brief, not the newsletter, decides the threads."""
 
 SEARCH = """\
 Run exactly one web search for the query you are given, then reply with the single word: done."""

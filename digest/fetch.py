@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -69,6 +70,66 @@ def _fetch_one(url: str, max_chars: int) -> Page | None:
     except httpx.HTTPError as e:
         log.info("skip %s (%s)", url, e.__class__.__name__)
         return None
+
+
+# --- Newsletter leads --------------------------------------------------------
+# TLDR AI publishes an RSS feed of daily issues; each issue page links every story to its
+# original source. We read it in code (no AI) and hand the stories to the planner as leads.
+TLDR_AI_FEED = "https://tldr.tech/api/rss/ai"
+_STORY_RE = re.compile(r'<a[^>]+href="(https?://[^"#]+)"[^>]*>(.*?)</a>', re.S)
+_STORY_MARK = re.compile(r"\((\d+ minute read|GitHub Repo)\)", re.I)
+
+
+def _clean_url(url: str) -> str:
+    """Drop tracking parameters (utm_*), keep the rest."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+    parts = urlsplit(html.unescape(html.unescape(url)))
+    query = urlencode([(k, v) for k, v in parse_qsl(parts.query) if not k.startswith("utm_")])
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, query, ""))
+
+
+def issue_stories(issue_html: str) -> list[dict]:
+    """Stories from one newsletter issue: {headline, url}. Sponsors and non-story links are skipped."""
+    stories, seen = [], set()
+    for href, inner in _STORY_RE.findall(issue_html):
+        text = html.unescape(re.sub(r"<[^>]+>", "", inner)).strip()
+        if "tldr.tech" in href or "(Sponsor)" in text or not _STORY_MARK.search(text):
+            continue
+        url = _clean_url(href)
+        if url in seen:
+            continue
+        seen.add(url)
+        stories.append({"headline": _STORY_MARK.sub("", text).strip(), "url": url})
+    return stories
+
+
+def newsletter_leads(since: str, max_issues: int = 3, feed_url: str = TLDR_AI_FEED) -> list[dict]:
+    """Stories from newsletter issues published on/after `since` (YYYY-MM-DD).
+
+    Never raises: if the feed or a page can't be read, the run simply continues without leads.
+    """
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+
+    try:
+        feed = httpx.get(feed_url, headers=_HEADERS, timeout=15, follow_redirects=True)
+        feed.raise_for_status()
+        issues = []
+        for item in ET.fromstring(feed.text).findall("./channel/item"):
+            day = parsedate_to_datetime(item.findtext("pubDate")).date().isoformat()
+            if day >= since:
+                issues.append((day, item.findtext("link")))
+        leads = []
+        for day, link in sorted(issues, reverse=True)[:max_issues]:
+            page = httpx.get(link, headers=_HEADERS, timeout=20, follow_redirects=True)
+            if page.status_code == 200:
+                leads += [{**s, "issue_date": day} for s in issue_stories(page.text)]
+        log.info("newsletter: %d leads from %d issue(s) since %s", len(leads), len(issues[:max_issues]), since)
+        return leads
+    except Exception as e:  # network, feed format change, ...: leads are a bonus, never a blocker
+        log.warning("newsletter leads unavailable (%s); continuing without them", e.__class__.__name__)
+        return []
 
 
 def _loads(url: str) -> bool:

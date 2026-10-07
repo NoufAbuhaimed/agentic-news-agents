@@ -23,7 +23,7 @@ from langgraph.types import Send
 from . import costs, prompts, signal_client
 from .agent import build_research_agent
 from .config import settings
-from .fetch import reachable
+from .fetch import newsletter_leads, reachable
 from .llm import check_stop, free_chat, free_json, writer_chat
 from .state import (
     Candidate,
@@ -54,6 +54,11 @@ def _items_block(items: list[Candidate]) -> str:
 def planner(state: DigestState) -> dict:
     remembered = store().top_sources()
     memory = f"\nSources that produced published items before: {', '.join(remembered)}." if remembered else ""
+    leads = newsletter_leads(state["since"])
+    if leads:
+        memory += "\n\nToday's newsletter headlines (headline → original source):\n" + "\n".join(
+            f"- {lead['headline']} → {lead['url']}" for lead in leads
+        )
     plan = free_json(
         [
             SystemMessage(prompts.PLANNER),

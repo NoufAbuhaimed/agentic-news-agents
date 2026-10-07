@@ -18,7 +18,10 @@ def isolated_data_dir(tmp_path):
     nodes.store.cache_clear()
     costs._current = None
     costs._search_down = None
+    nodes.newsletter_leads = lambda since, **kw: []  # tests never call the real newsletter
     yield
+    from digest import fetch
+    nodes.newsletter_leads = fetch.newsletter_leads
     object.__setattr__(settings, "data_dir", original)
     nodes.store.cache_clear()
     costs._current = None
