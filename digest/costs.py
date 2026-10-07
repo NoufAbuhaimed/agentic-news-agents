@@ -23,6 +23,7 @@ PRICES = {
 WEB_SEARCH_USD = 0.01  # per search request
 
 
+# Look up a model's price; free OpenRouter models (":free") cost nothing.
 def _price(model: str) -> tuple[float, float] | None:
     if model.endswith(":free"):
         return (0.0, 0.0)
@@ -32,6 +33,8 @@ def _price(model: str) -> tuple[float, float] | None:
     return None
 
 
+# A LangChain callback: after EVERY model call (including inside tools and agents) LangChain calls
+# on_llm_end(), where we read the token counts and number of searches and add up the cost.
 class CostTracker(BaseCallbackHandler):
     def __init__(self, budget_usd: float):
         self.budget_usd = budget_usd

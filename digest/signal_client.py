@@ -7,6 +7,8 @@ import httpx
 from .config import settings
 
 
+# Signal has no official bot API. We run signal-cli (in the signal-api Docker container), linked to
+# the user's Signal account like Signal Desktop, and talk to it over this small local REST API.
 def _client() -> httpx.Client:
     return httpx.Client(base_url=settings.signal_api_url, timeout=60)
 
@@ -18,6 +20,7 @@ def list_groups() -> list[dict]:
         return r.json()
 
 
+# Post a message to the configured group, sent as the linked account.
 def send(message: str, recipient: str | None = None) -> None:
     recipient = recipient or settings.signal_group_id
     if not (settings.signal_number and recipient):

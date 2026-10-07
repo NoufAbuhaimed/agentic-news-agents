@@ -18,6 +18,7 @@ from .config import settings
 log = logging.getLogger("digest")
 
 
+# Log to the terminal and to data/logs/digest.log (rotated, so it never grows without limit).
 def setup_logging() -> None:
     settings.log_dir.mkdir(parents=True, exist_ok=True)
     root = logging.getLogger()
@@ -39,6 +40,8 @@ def setup_logging() -> None:
 _MAIN_NODES = {"planner", "researcher", "fact_check", "select", "writer", "critic", "send"}
 
 
+# LangChain callbacks are notified about every chain/node, model call and tool call in the run.
+# We use them to print the readable step log: ▶ node, 🔧 tool(args), ↳ result, llm tokens.
 class StepLogger(BaseCallbackHandler):
     """One log line per main graph node, per model call (tokens, searches) and per agent tool call."""
 
@@ -99,6 +102,7 @@ class RootRunCapture(BaseCallbackHandler):
             self.run_id = run_id
 
 
+# Optional external health check (e.g. healthchecks.io emails you if a run fails or is missed).
 def ping(suffix: str = "") -> None:
     """healthchecks.io-style ping: '' = success, '/start', '/fail'. Never raises."""
     if not settings.healthcheck_url:

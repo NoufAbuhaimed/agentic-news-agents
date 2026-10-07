@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS runs (
 """
 
 
+# Two links to the same page often differ slightly (tracking params, trailing slash, www).
+# Normalizing them lets memory and dedupe recognize the same page.
 def normalize_url(url: str) -> str:
     """Canonical form for dedupe: lowercase host, no fragment, no tracking params, no trailing slash."""
     parts = urlsplit(url.strip())
@@ -43,6 +45,10 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# --- Long-term memory (SQLite file data/digest.sqlite) -------------------------------------------
+# sent_items  : links already posted (never post twice; used by check_already_sent and select)
+# source_stats: which websites produced posted news (the planner favors them)
+# runs        : history of runs with status and cost (cadence, crash recovery, observability)
 class Store:
     def __init__(self, path):
         path.parent.mkdir(parents=True, exist_ok=True)

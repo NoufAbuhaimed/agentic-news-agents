@@ -35,15 +35,21 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
     since_override = since
     db = store()
     now = datetime.now(timezone.utc)
+    # Cadence: post at most every ~2 days (47h). --dry-run and --force skip this check.
     last = db.last_sent_at()
     if not (dry_run or force) and last and now - last < timedelta(hours=settings.min_hours_between):
         log.info("last digest sent %s; not due yet", last.isoformat(timespec="minutes"))
         return None
 
     graph = build_graph()
+    # Crash recovery: if the last live run failed midway, continue it from its checkpoint
+    # instead of starting over (so finished research isn't paid for twice).
     resume_id = None if dry_run else db.unfinished_run()
     run_id = resume_id or f"{'dry-' if dry_run else ''}{now:%Y%m%d-%H%M}-{uuid.uuid4().hex[:6]}"
+    # Cost tracking for this run, with the hard budget cap (costs.py).
     tracker = costs.start(settings.run_budget_usd)
+    # Run configuration: `thread_id` names this run's checkpoints; the callbacks see every model
+    # and tool call (StepLogger = log lines, tracker = cost). LangSmith tracing turns on from .env.
     config = {
         "configurable": {"thread_id": run_id},
         "callbacks": [StepLogger(), tracker, *callbacks],
@@ -57,6 +63,7 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
     if not dry_run:
         db.start_run(run_id)
         ping("/start")
+    # Run the graph. graph.invoke runs it to the end; graph.stream reports each step as it finishes.
     def execute(graph_input):
         if on_update is None:
             return graph.invoke(graph_input, config)
@@ -68,6 +75,7 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
     try:
         if resume_id:
             log.info("resuming unfinished run %s from its last checkpoint", run_id)
+            # Passing None means "continue from the saved checkpoint" (LangGraph convention).
             result = execute(None)
         else:
             today = datetime.now(ZoneInfo(settings.timezone)).date()
@@ -76,6 +84,7 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
             if since_override:
                 since = date.fromisoformat(since_override)
             log.info("starting run %s (news since %s)", run_id, since)
+            # The initial state of a new run: inputs + empty lists for the fields that nodes fill in.
             result = execute(
                 {
                     "run_id": run_id,
@@ -91,6 +100,7 @@ def run(dry_run: bool = False, force: bool = False, on_update=None, callbacks=()
                     "revisions": 0,
                 }
             )
+    # Any crash: mark the run failed (so the next run resumes it) and notify the health check.
     except Exception:
         log.exception("run %s failed; next run will resume from the last checkpoint", run_id)
         log.info("run cost so far: %s", tracker.summary())

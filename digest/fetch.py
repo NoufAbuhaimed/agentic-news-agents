@@ -28,6 +28,7 @@ _MDY_RE = re.compile(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*
 _DMY_RE = re.compile(r"\b(\d{1,2}) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,? (20\d\d)\b", re.I)
 
 
+# Collect every date shown on a page. save_finding only accepts a publication date from this list.
 def page_dates(html: str, text: str) -> list[str]:
     """Every date on the page as YYYY-MM-DD: ISO dates in the HTML (incl. <time datetime=...>)
     plus written dates like 'Oct 5, 2026' or '5 October 2026' in the text."""
@@ -40,6 +41,7 @@ def page_dates(html: str, text: str) -> list[str]:
 
 
 @dataclass
+# One downloaded page: what the agent reads (text) + what code uses to verify (links, dates).
 class Page:
     url: str
     title: str
@@ -48,6 +50,7 @@ class Page:
     dates: list[str] = field(default_factory=list)  # YYYY-MM-DD dates found on the page
 
 
+# Download one page; trafilatura extracts the article text (no menus or ads). None if unreadable.
 def _fetch_one(url: str, max_chars: int) -> Page | None:
     try:
         r = httpx.get(url, headers=_HEADERS, timeout=20, follow_redirects=True)
@@ -132,6 +135,7 @@ def newsletter_leads(since: str, max_issues: int = 3, feed_url: str = TLDR_AI_FE
         return []
 
 
+# --- URL checks -------------------------------------------------------------------------------
 def _loads(url: str) -> bool:
     try:
         r = httpx.get(url, headers=_HEADERS, timeout=10, follow_redirects=True)
@@ -147,6 +151,7 @@ def reachable(urls: list[str]) -> list[str]:
     return [u for u, good in zip(urls, ok) if good]
 
 
+# Download several pages at the same time (threads); unreadable ones are skipped.
 def fetch_pages(urls: list[str], max_chars: int) -> list[Page]:
     with ThreadPoolExecutor(max_workers=6) as pool:
         pages = pool.map(lambda u: _fetch_one(u, max_chars), urls)

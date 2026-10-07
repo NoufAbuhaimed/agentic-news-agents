@@ -29,6 +29,8 @@ from .tools import ResearchContext, build_tools
 log = logging.getLogger(__name__)
 
 
+# --- Guard rail 1: loop detection (our own middleware) ------------------------------------------
+# Middleware = code that runs around every model turn or tool call of the agent.
 class LoopDetector(AgentMiddleware):
     """Catches an agent repeating itself.
 
@@ -43,8 +45,10 @@ class LoopDetector(AgentMiddleware):
         self.seen: Counter[str] = Counter()
         self.repeats = 0
 
+    # Runs BEFORE each tool call. `handler(request)` would actually run the tool.
     def wrap_tool_call(self, request, handler):
         call = request.tool_call
+        # Identity of a call = tool name + its exact arguments.
         key = f"{call['name']}:{json.dumps(call['args'], sort_keys=True)}"
         self.seen[key] += 1
         if self.seen[key] > 1:
@@ -58,8 +62,10 @@ class LoopDetector(AgentMiddleware):
                 tool_call_id=call["id"],
                 status="error",
             )
+        # Not a repeat: run the tool normally.
         return handler(request)
 
+    # Runs BEFORE each model turn. Returning {"jump_to": "end"} ends the agent loop immediately.
     @hook_config(can_jump_to=["end"])
     def before_model(self, state, runtime):
         if self.repeats >= self.max_repeats:
@@ -68,6 +74,8 @@ class LoopDetector(AgentMiddleware):
         return None
 
 
+# --- Guard rail 2: time limit (our own middleware) -----------------------------------------------
+# Caps how long one agent may work (4 min, 2 on a retry), so one slow agent can't hold up the run.
 class TimeLimit(AgentMiddleware):
     """Stops the agent once its time is up; findings saved so far are kept."""
 
@@ -88,13 +96,20 @@ class TimeLimit(AgentMiddleware):
         return None
 
 
+# --- Building the agent ------------------------------------------------------------------------
+# create_agent (LangChain) builds the agent loop as a small LangGraph graph:
+#     model node ─(tool call)→ tools node ─(result)→ model node … ─(no tool call)→ end
+# The model chooses the tools; the middleware list below is applied around every step.
 def build_research_agent(
     ctx: ResearchContext, search_limit: int, max_steps: int | None = None, time_limit_s: float | None = None
 ):
     models = list(settings.free_models)
     return create_agent(
+        # The agent's "brain": a free OpenRouter model (NVIDIA Nemotron by default).
         free_chat(models[0]),
+        # The 4 tools (tools.py), bound to this agent's private notebook `ctx`.
         build_tools(ctx),
+        # How to work: verify on official pages, stay in the date window, stop when done.
         system_prompt=prompts.AGENT,
         middleware=[
             # Free model busy or down → next free model → Claude Haiku.
@@ -103,6 +118,7 @@ def build_research_agent(
             ModelCallLimitMiddleware(run_limit=max_steps or settings.agent_max_steps, exit_behavior="end"),
             ToolCallLimitMiddleware(tool_name="web_search", run_limit=search_limit, exit_behavior="continue"),
             ToolCallLimitMiddleware(tool_name="fetch_page", run_limit=settings.pages_per_thread, exit_behavior="continue"),
+            # Our own guard rails (defined above).
             LoopDetector(ctx.thread.name),
             TimeLimit(ctx.thread.name, time_limit_s or settings.agent_time_limit_s),
         ],
