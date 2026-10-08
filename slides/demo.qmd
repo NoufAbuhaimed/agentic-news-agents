@@ -104,7 +104,7 @@ A LangGraph graph of `create_agent` agents
 
 - **Dashed arrows are conditional** routes: the graph decides at run time
 - `select` ends the run when there's nothing new, so no empty messages are sent
-- 7 nodes · 11 edges · 5 conditional, printed straight from the code with `python -m digest graph`
+- 7 nodes · 11 edges (7 conditional, 4 fixed), printed straight from the code with `python -m digest graph`
 
 ## Not a sequential chain {.smaller}
 
